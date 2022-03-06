@@ -1,0 +1,17 @@
+{
+  "name": "maxmind-db",
+  "version": "0.0.1",
+  "description": "A MaxMind database reader for web browsers.",
+  "homepage": "https://github.com/stefansundin/maxmind-db.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stefansundin/maxmind-db.js.git"
+  },
+  "author": "Stefan Sundin",
+  "license": "MIT",
+  "browser": "src/MaxMindDB.js",
+  "keywords": [
+    "maxmind",
+    "geoip"
+  ]
+}
