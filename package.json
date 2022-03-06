@@ -1,6 +1,6 @@
 {
   "name": "maxmind-db",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A MaxMind database reader for web browsers.",
   "homepage": "https://github.com/stefansundin/maxmind-db.js",
   "repository": {
@@ -9,9 +9,23 @@
   },
   "author": "Stefan Sundin",
   "license": "MIT",
-  "browser": "src/MaxMindDB.js",
+  "browser": "dist/MaxMindDB.js",
+  "types": "dist/MaxMindDB.d.ts",
+  "scripts": {
+    "build": "./build.sh",
+    "lint": "eslint src"
+  },
   "keywords": [
     "maxmind",
     "geoip"
-  ]
+  ],
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.13.0",
+    "@typescript-eslint/parser": "^5.13.0",
+    "eslint": "^8.10.0",
+    "ts-loader": "^9.2.7",
+    "typescript": "^4.6.2",
+    "webpack": "^5.70.0",
+    "webpack-cli": "^4.9.2"
+  }
 }

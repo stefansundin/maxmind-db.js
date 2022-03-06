@@ -1,0 +1,10 @@
+Thumbs.db
+*.DS_Store
+*.swp
+.~lock.*
+
+node_modules
+yarn-error.log
+
+*.mmdb
+*.tar.gz

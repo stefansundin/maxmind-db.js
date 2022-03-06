@@ -1,21 +1,22 @@
 // https://maxmind.github.io/MaxMind-DB/
 
-class MaxMindDB {
-  constructor() {
-    this.buffer = null;
-    this.search_tree_size = null;
-    this.data_section_start = null;
-    this.ipv4_start = null;
-    this._metadata = null;
-  }
+export default class MaxMindDB {
+  private buffer: null | ArrayBuffer = null;
+  private search_tree_size: null | number = null;
+  private data_section_start: null | number = null;
+  private ipv4_start: null | number = null;
+  private _metadata: any = null;
 
-  async loadBlob(blob) {
+  async loadBlob(blob: Blob): Promise<void> {
     this.buffer = await blob.arrayBuffer();
   }
 
-  get metadata() {
+  get metadata(): any {
     if (this._metadata !== null) {
       return this._metadata;
+    }
+    if (!this.buffer) {
+      throw new Error('Database not loaded');
     }
 
     const header = this.string2Uint8Array('\xab\xcd\xefMaxMind.com');
@@ -48,13 +49,13 @@ class MaxMindDB {
     return this._metadata;
   }
 
-  get(ip) {
+  get(ip: string): Array<any> {
     const addr = this.packIP(ip);
     const [r] = this.record(addr);
     return r;
   }
 
-  record(addr) {
+  record(addr: ArrayBuffer): Array<any> {
     const [pointer, depth] = this.find_address_in_tree(addr);
     if (pointer === 0) {
       return [null, depth];
@@ -63,9 +64,13 @@ class MaxMindDB {
     return [this.resolve_data_pointer(pointer), depth];
   }
 
-  resolve_data_pointer(pointer) {
+  resolve_data_pointer(pointer: number): Array<any> {
+    if (!this.buffer) {
+      throw new Error('Database not loaded');
+    }
+
     const offset_in_file =
-      pointer - this.metadata.node_count + this.search_tree_size;
+      pointer - this.metadata.node_count + this.search_tree_size!;
 
     if (offset_in_file >= this.buffer.byteLength) {
       throw new Error('The search tree is corrupt');
@@ -74,7 +79,7 @@ class MaxMindDB {
     return this.decode(offset_in_file);
   }
 
-  find_address_in_tree(addr) {
+  find_address_in_tree(addr: ArrayBuffer): Array<number> {
     const bit_count = 8 * addr.byteLength;
     const node_count = this.metadata.node_count;
     const view = new DataView(addr);
@@ -100,7 +105,7 @@ class MaxMindDB {
     throw new Error('Invalid node in search tree');
   }
 
-  start_node(addr_length) {
+  start_node(addr_length: number): number {
     if (addr_length === 128) {
       return 0;
     } else if (this.ipv4_start) {
@@ -121,7 +126,11 @@ class MaxMindDB {
     return this.ipv4_start;
   }
 
-  read_node(node_number, index) {
+  read_node(node_number: number, index: number): number {
+    if (!this.buffer) {
+      throw new Error('Database not loaded');
+    }
+
     const node_byte_size = this.metadata.record_size / 4;
     const base_offset = node_number * node_byte_size;
     const record_size = this.metadata.record_size;
@@ -154,7 +163,11 @@ class MaxMindDB {
     throw new Error(`Unsupported record size: ${record_size}`);
   }
 
-  decode(position) {
+  decode(position: number): Array<any> {
+    if (!this.buffer) {
+      throw new Error('Database not loaded');
+    }
+
     const view = new DataView(this.buffer);
     let ctrl_byte = view.getUint8(position);
     position += 1;
@@ -172,7 +185,7 @@ class MaxMindDB {
       // pointer
       const ptr_size = (ctrl_byte >>> 3) & 0x03;
       const ptr_value = ctrl_byte & 0x07;
-      let value = this.data_section_start;
+      let value = this.data_section_start!;
       if (ptr_size === 0) {
         // If the size is 0, the pointer is built by appending the next byte to the last three bits to produce an 11-bit value.
         const bytes = new Uint8Array(2);
@@ -245,7 +258,7 @@ class MaxMindDB {
       return [type, position + 8, value];
     } else if (type === 5) {
       // unsigned 16-bit int
-      let value;
+      let value: number;
       if (size === 0) {
         value = 0;
       } else if (size === 1) {
@@ -261,7 +274,7 @@ class MaxMindDB {
       return [type, position + size, value];
     } else if (type === 6) {
       // unsigned 32-bit int
-      let value;
+      let value: number;
       if (size === 0) {
         value = 0;
       } else if (size === 4) {
@@ -279,7 +292,7 @@ class MaxMindDB {
       return [type, position + size, value];
     } else if (type === 7) {
       // 111 - map
-      const map = {};
+      const map: any = {};
       for (let i = 0; i < size; i++) {
         let key_type, key, value_type, value;
         [key_type, position, key] = this.decode(position);
@@ -289,7 +302,7 @@ class MaxMindDB {
       return [type, position, map];
     } else if (type === 9) {
       // unsigned 64-bit int
-      let value;
+      let value: number | bigint;
       if (size === 0) {
         value = 0;
       } else if (size === 8) {
@@ -310,7 +323,7 @@ class MaxMindDB {
       return [type, position + size, value];
     } else if (type === 11) {
       // array
-      const array = [];
+      const array: Array<any> = [];
       for (let i = 0; i < size; i++) {
         let value_type, value;
         [value_type, position, value] = this.decode(position);
@@ -319,14 +332,14 @@ class MaxMindDB {
       return [type, position, array];
     } else if (type === 14) {
       // boolean
-      const value = size === 1;
+      const value: boolean = size === 1;
       return [type, position, value];
     } else {
       throw new Error(`Unknown type: ${type}`);
     }
   }
 
-  equal(a, b) {
+  equal(a: Uint8Array, b: Uint8Array): boolean {
     if (a.byteLength !== b.byteLength) {
       return false;
     }
@@ -338,7 +351,7 @@ class MaxMindDB {
     return true;
   }
 
-  packIP(ip) {
+  packIP(ip: string): ArrayBuffer {
     if (ip.includes('.')) {
       // IPv4
       const segments = ip.split('.');
@@ -389,7 +402,7 @@ class MaxMindDB {
     }
   }
 
-  string2Uint8Array(s) {
+  private string2Uint8Array(s: string): Uint8Array {
     const arr = new Uint8Array(s.length);
     for (let i = 0; i < s.length; i++) {
       arr[i] = s.charCodeAt(i);
