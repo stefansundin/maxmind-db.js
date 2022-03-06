@@ -1,2 +1,5 @@
 Thumbs.db
 .DS_Store
+
+*.key
+*.crt
