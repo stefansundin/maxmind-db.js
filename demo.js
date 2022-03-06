@@ -205,6 +205,7 @@ document.addEventListener('DOMContentLoaded', async event => {
   dbForm.addEventListener('submit', async e => {
     e.preventDefault();
     loadButton.blur();
+    document.body.click(); // close any dropdowns that might be open
 
     let cache, response;
     if (cacheCheckbox.checked) {
@@ -310,6 +311,9 @@ document.addEventListener('DOMContentLoaded', async event => {
 
   ipForm.addEventListener('submit', e => {
     e.preventDefault();
+    lookupButton.blur();
+    document.body.click(); // close any dropdowns that might be open
+
     try {
       addrField.classList.remove('is-invalid');
       const addr = addrField.value;
