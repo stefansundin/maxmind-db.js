@@ -100,37 +100,41 @@ document.addEventListener('DOMContentLoaded', async event => {
       urlField.placeholder = source;
     }
 
-    file = await normalizeExtensions(file.name.split('.').slice(1)).reduceRight(
-      async (file, ext) => {
+    try {
+      file = await normalizeExtensions(
+        file.name.split('.').slice(1),
+      ).reduceRight(async (file, ext) => {
         file = await file;
         if (ext === 'gz') {
-          file = await pako.inflate(await file.arrayBuffer());
-          file = await file.buffer;
+          const data = await pako.inflate(await file.arrayBuffer());
+          file = new File([data], file.name.split('.').slice(0, -1).join('.'));
         } else if (ext === 'tar') {
-          const files = await untar(file);
-          file = files.find(f => f.name.endsWith('.mmdb'));
-          file = await file.blob;
+          const files = await untar(await file.arrayBuffer());
+          const f = files.find(f => f.name.endsWith('.mmdb'));
+          if (!f) {
+            return null;
+          }
+          file = await f.blob;
         } else if (ext === 'zip') {
           const zip = await JSZip.loadAsync(file);
-          for (const f of Object.values(zip.files)) {
-            if (f.name.startsWith('__MACOSX/')) {
-              continue;
-            }
-            if (f.name.endsWith('.mmdb')) {
-              file = await f.async('blob');
-              break;
-            }
+          const f = Object.values(zip.files).find(
+            f => !f.name.startsWith('__MACOSX/') && f.name.endsWith('.mmdb'),
+          );
+          if (!f) {
+            return null;
           }
+          file = await f.async('blob');
         }
         return file;
-      },
-      Promise.resolve(file),
-    );
+      }, Promise.resolve(file));
 
-    const new_db = new MaxMindDB();
-    await new_db.loadBlob(file);
+      if (!file) {
+        throw new Error('Database was not found.');
+      }
 
-    try {
+      const new_db = new MaxMindDB();
+      await new_db.loadBlob(file);
+
       metadataField.value = JSON.stringify(new_db.metadata, null, 2);
 
       // Swap the database
