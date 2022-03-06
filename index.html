@@ -1,0 +1,148 @@
+<!--
+  Please note that while MaxMindDB.js is licensed under the MIT license, this demo is licensed under AGPL v3 or later!
+  If you develop a derivative of this demo, then please do not obfuscate the source code!
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MaxMindDB.js Demo</title>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://cdn.jsdelivr.net">
+  <meta name="referrer" content="no-referrer">
+  <meta name="author" content="Stefan Sundin">
+  <meta name="description" content="MaxMindDB.js Demo">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="license" href="https://www.gnu.org/licenses/agpl-3.0.html" title="GNU AGPL v3 or later">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css" integrity="sha384-zCbKRCUGaJDkqS1kPbPd7TveP5iyJE0EjAuZQTgFLD2ylzuqKfdKlfG/eSrtxUkn" crossorigin="anonymous">
+  <link rel="stylesheet" href="demo.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.slim.min.js" integrity="sha384-Qg00WFl9r0Xr6rUqNLv1ffTSSKEFFCDCKVyHZ+sVt8KuvG99nWw5RNvbhuKgif9z" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-fQybjgWLrvvRgtW6bFlB7jaZrFsaBXjsOMm/tB9LTS58ONXgqbR9W8oWht/amnpF" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/gh/stefansundin/maxmind-db.js@v0.0.1/src/MaxMindDB.js" integrity="sha384-F8D71S7wFqOD9dv0SuMwzGw1R4vZFYpIYMaJMgAEQzoKcK0zAFPAWG3djzzx+O+/" crossorigin="anonymous"></script>
+  <script src="demo.js"></script>
+</head>
+<body class="mb-5">
+  <header class="mt-4 mb-4 text-center">
+    <h1 itemprop="name">MaxMindDB.js Demo</h1>
+    <h4>By <span itemprop="author">Stefan Sundin</span></h4>
+  </header>
+
+  <div class="container">
+    <noscript>
+      <div class="alert alert-danger text-center" role="alert">
+        You have disabled JavaScript so nothing on this website will work. This website does not perform any user tracking of any kind.
+      </div>
+    </noscript>
+
+    <details class="mb-2">
+      <summary>Show package info</summary>
+      <p>
+        <a href="https://www.npmjs.com/package/maxmind-db" target="_blank" rel="noreferrer">https://www.npmjs.com/package/maxmind-db</a><br>
+        <a href="https://github.com/stefansundin/maxmind-db.js" target="_blank" rel="noreferrer">https://github.com/stefansundin/maxmind-db.js</a><br>
+        Database specification: <a href="https://maxmind.github.io/MaxMind-DB/" target="_blank" rel="noreferrer">https://maxmind.github.io/MaxMind-DB/</a>
+      </p>
+      <div class="mb-3">
+        <label for="script-tag" class="form-label">Use in a <code>&lt;script&gt;</code> tag:</label>
+        <textarea class="form-control" id="script-tag" rows="2" spellcheck="false" readonly></textarea>
+      </div>
+      <hr>
+    </details>
+
+    <p>
+      This product includes GeoLite2 data created by MaxMind, available from <a href="https://www.maxmind.com/">https://www.maxmind.com/</a>.<br>
+      <small>If you make use of GeoLite2 in your product then according to <a href="https://dev.maxmind.com/geoip/geolite2-free-geolocation-data#license" target="_blank">the license</a> you should include the statement above.</small>
+    </p>
+
+    <div class="bd-callout">
+      <p class="mb-0">First you need to load a MaxMind database. By default the file will be cached in your web browser for use in later visits. You can also drag and drop an <code>mmdb</code> file on this page.</p>
+    </div>
+
+    <form class="input-group" id="db" autocomplete="off">
+      <div class="input-group-prepend">
+        <span class="input-group-text"><label for="url">Database URL</label></span>
+      </div>
+      <input class="form-control" type="search" id="url" placeholder="URL to a MaxMind database." required spellcheck="false" value="/GeoLite2-City_20220208/GeoLite2-City.mmdb">
+      <div class="input-group-append btn-group" id="db-actions">
+        <button type="button" class="btn btn-danger d-none" id="abort">Abort</button>
+        <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <span class="sr-only">Toggle Dropdown</span>
+        </button>
+        <div class="dropdown-menu dropdown-menu-right">
+          <label class="dropdown-item form-inline form-check-label" for="cache">
+            <input type="checkbox" class="form-check-input" id="cache" checked>
+            Use cache
+          </label>
+          <button type="button" class="dropdown-item" id="clearCache" disabled>
+            Clear cache<br>
+            <small id="cacheInfo"></small>
+          </button>
+          <a class="dropdown-item" id="download" download>Download the file</a>
+          <div id="cacheExtra">
+            <div class="dropdown-divider"></div>
+            <h6 class="dropdown-header">Load cached files</h6>
+            <div id="cacheList"></div>
+          </div>
+        </div>
+        <input type="submit" class="btn btn-primary" id="load" value="Load">
+      </div>
+    </form>
+
+    <progress id="progress" class="input-group" value="0"></progress>
+
+    <details class="mb-2">
+      <summary>Show database metadata</summary>
+      <textarea class="form-control mt-1" id="metadata" rows="15" placeholder="{ metadata }" spellcheck="false" autocomplete="off"></textarea>
+    </details>
+
+    <div class="bd-callout form-inline">
+      <p class="mb-0 mr-2">Then query it with IPv4 or IPv6 addresses.</p>
+
+      <div class="dropdown">
+        <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Examples</button>
+        <div class="dropdown-menu" id="example_addrs">
+          <h6 class="dropdown-header">Example addresses</h6>
+          <button type="button" class="dropdown-item">1.1.1.1</button>
+          <button type="button" class="dropdown-item">4.2.2.2</button>
+          <button type="button" class="dropdown-item">8.8.8.8</button>
+          <button type="button" class="dropdown-item">208.67.222.222</button>
+          <button type="button" class="dropdown-item">2606:4700:4700::1111</button>
+          <button type="button" class="dropdown-item">2001:4860:4860::8888</button>
+          <button type="button" class="dropdown-item">2620:0:ccc::2</button>
+          <button type="button" class="dropdown-item">2a03:2880:2110:df07:face:b00c::1</button>
+          <button type="button" class="dropdown-item">2600::</button>
+        </div>
+      </div>
+    </div>
+
+    <form class="input-group mb-2" id="ip" autocomplete="off">
+      <div class="input-group-prepend">
+        <span class="input-group-text"><label for="addr">IP</label></span>
+      </div>
+      <input class="form-control" type="text" id="addr" placeholder="IPv4 or IPv6 address" spellcheck="false" required>
+      <div class="input-group-append">
+        <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <span class="sr-only">Toggle Dropdown</span>
+        </button>
+        <div class="dropdown-menu dropdown-menu-right">
+          <h6 class="dropdown-header">Output language</h6>
+          <select class="dropdown-item form-inline" id="language">
+            <option value="">All</option>
+          </select>
+          <div class="dropdown-divider"></div>
+          <button type="button" class="dropdown-item" id="expandIPv6">
+            Expand IPv6 address
+          </button>
+          <div class="dropdown-divider"></div>
+          <button type="button" class="dropdown-item" id="clearLog">
+            Clear log
+          </button>
+        </div>
+        <input type="submit" class="btn btn-primary" id="lookup" value="Look up" disabled>
+      </div>
+    </form>
+
+    <textarea class="form-control mb-2" id="log" rows="50" placeholder="Results will appear here." spellcheck="false" autocomplete="off"></textarea>
+  </div>
+
+  <div id="dropzone" class="d-none"></div>
+</body>
+</html>

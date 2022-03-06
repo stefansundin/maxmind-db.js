@@ -1,0 +1,51 @@
+label {
+  user-select: none;
+}
+input[type="text"] {
+  font-family: monospace !important;
+}
+
+#script-tag {
+  min-height: 65px;
+  word-break: break-all;
+}
+
+#db .dropdown-menu {
+  min-width: 250px;
+}
+
+.form-inline .input-group {
+  margin-top: 0;
+  margin-right: 10px;
+}
+.input-group-prepend label {
+  margin: 0;
+}
+.input-group-append input[type="submit"] {
+  min-width: 110px;
+}
+
+.input-group-append .dropdown-toggle {
+  border-radius: 0;
+}
+
+.bd-callout {
+  padding: 1rem 1.25rem;
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid #eee;
+  border-left-width: 1px;
+  border-left-width: .25rem;
+  border-radius: .25rem;
+  border-left-color: #17a2b8;
+}
+
+#dropzone {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: rgba(50, 50, 50, 0.5);
+  z-index: 100;
+}
