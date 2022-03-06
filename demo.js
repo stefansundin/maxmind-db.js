@@ -212,15 +212,6 @@ document.addEventListener('DOMContentLoaded', async event => {
       response = await cache.match(urlField.value);
     }
 
-    if (
-      !response &&
-      !confirm(
-        'This will download ~70 MB of data. Are you sure you want to continue?',
-      )
-    ) {
-      return;
-    }
-
     loadButton.disabled = true;
     loadButton.value = 'Loading...';
 
