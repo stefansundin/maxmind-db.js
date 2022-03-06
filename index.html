@@ -71,6 +71,8 @@
           <span class="sr-only">Toggle Dropdown</span>
         </button>
         <div class="dropdown-menu dropdown-menu-right">
+          <button type="button" class="dropdown-item" id="selectFile">Select file</button>
+          <div class="dropdown-divider"></div>
           <label class="dropdown-item form-inline form-check-label" for="cache">
             <input type="checkbox" class="form-check-input" id="cache" checked>
             Use cache
@@ -147,6 +149,7 @@
     <textarea class="form-control mb-2" id="log" rows="50" placeholder="Results will appear here." spellcheck="false" autocomplete="off"></textarea>
   </div>
 
+  <input class="d-none" type="file" id="file" accept=".mmdb">
   <div id="dropzone" class="d-none"></div>
 </body>
 </html>

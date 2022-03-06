@@ -27,6 +27,8 @@ document.addEventListener('DOMContentLoaded', async event => {
   const clearLogButton = document.getElementById('clearLog');
   const logField = document.getElementById('log');
   const metadataField = document.getElementById('metadata');
+  const fileBtn = document.getElementById('selectFile');
+  const fileInput = document.getElementById('file');
   const dropzone = document.getElementById('dropzone');
 
   const script = document.querySelector(
@@ -194,6 +196,13 @@ document.addEventListener('DOMContentLoaded', async event => {
       }
     });
   });
+
+  fileInput.addEventListener('change', async e => {
+    for (const file of e.target.files) {
+      load_database(file, file.name);
+    }
+  });
+  fileBtn.addEventListener('click', () => fileInput.click());
 
   clearCacheButton.addEventListener('click', async e => {
     await caches.delete('maxmind-databases');
