@@ -56,6 +56,26 @@ document.addEventListener('DOMContentLoaded', async event => {
     return `${size} ${units[i]}`;
   }
 
+  function extractFilename(s) {
+    try {
+      const url = new URL(s);
+      s = url.pathname;
+    } catch {}
+    const i = s.lastIndexOf('/');
+    return s.substring(i + 1);
+  }
+
+  function normalizeExtensions(arr) {
+    return arr.flatMap(ext => {
+      if (ext === 'tgz') {
+        return ['tar', 'gz'];
+      } else if (ext === 'gzip') {
+        return 'gz';
+      }
+      return ext;
+    });
+  }
+
   function filterNames(o, lang) {
     if (o instanceof Array) {
       return o.map(v => filterNames(v, lang));
@@ -72,13 +92,41 @@ document.addEventListener('DOMContentLoaded', async event => {
     return o;
   }
 
-  async function load_database(data, filename) {
-    if (filename) {
+  async function load_database(file, source) {
+    if (source) {
       urlField.value = '';
-      urlField.placeholder = filename;
+      urlField.placeholder = source;
     }
+
+    file = await normalizeExtensions(file.name.split('.').slice(1)).reduceRight(
+      async (file, ext) => {
+        file = await file;
+        if (ext === 'gz') {
+          file = await pako.inflate(await file.arrayBuffer());
+          file = await file.buffer;
+        } else if (ext === 'tar') {
+          const files = await untar(file);
+          file = files.find(f => f.name.endsWith('.mmdb'));
+          file = await file.blob;
+        } else if (ext === 'zip') {
+          const zip = await JSZip.loadAsync(file);
+          for (const f of Object.values(zip.files)) {
+            if (f.name.startsWith('__MACOSX/')) {
+              continue;
+            }
+            if (f.name.endsWith('.mmdb')) {
+              file = await f.async('blob');
+              break;
+            }
+          }
+        }
+        return file;
+      },
+      Promise.resolve(file),
+    );
+
     const new_db = new MaxMindDB();
-    await new_db.loadBlob(data);
+    await new_db.loadBlob(file);
 
     try {
       metadataField.value = JSON.stringify(new_db.metadata, null, 2);
@@ -178,7 +226,11 @@ document.addEventListener('DOMContentLoaded', async event => {
 
     try {
       if (response) {
-        await load_database(response);
+        const file = new File(
+          [await response.blob()],
+          extractFilename(response.url),
+        );
+        await load_database(file);
 
         progressBar.value = 1;
         progressBar.max = 1;
@@ -221,7 +273,8 @@ document.addEventListener('DOMContentLoaded', async event => {
         ).toFixed(1)}%)`;
       }
 
-      await load_database(new Blob(parts));
+      const file = new File(parts, extractFilename(response.url));
+      await load_database(file);
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') {
         loadButton.value = 'Load';
@@ -250,10 +303,9 @@ document.addEventListener('DOMContentLoaded', async event => {
     dropzone.classList.add('d-none');
   });
 
-  window.addEventListener('drop', async e => {
+  window.addEventListener('drop', e => {
     e.preventDefault();
     dropzone.classList.add('d-none');
-    console.log(e.dataTransfer);
 
     for (let i = 0; i < e.dataTransfer.items.length; i++) {
       if (e.dataTransfer.items[i].kind !== 'file') {
@@ -326,13 +378,16 @@ document.addEventListener('DOMContentLoaded', async event => {
   });
 
   async function loadCacheKey(key) {
-    console.log(key);
     const cache = await caches.open('maxmind-databases');
     const response = await cache.match(key);
     if (!response) {
       return;
     }
-    load_database(response, key.url);
+    const file = new File(
+      [await response.blob()],
+      extractFilename(response.url),
+    );
+    load_database(file, key.url);
   }
 
   // Check if caches is supported
