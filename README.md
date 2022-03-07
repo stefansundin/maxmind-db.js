@@ -10,7 +10,7 @@ if (!response.ok) {
   throw new Error(`Error fetching database: ${response.status} ${response.statusText}`);
 }
 const maxmind = new MaxMindDB();
-await maxmind.loadBlob(response);
+await maxmind.load(response);
 console.log(maxmind.get('1.1.1.1'));
 ```
 

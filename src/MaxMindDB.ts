@@ -7,8 +7,12 @@ export default class MaxMindDB {
   private ipv4_start: null | number = null;
   private _metadata: any = null;
 
-  async loadBlob(blob: Blob): Promise<void> {
-    this.buffer = await blob.arrayBuffer();
+  async load(data: ArrayBuffer | Blob | File | Response): Promise<void> {
+    if (data instanceof ArrayBuffer) {
+      this.buffer = data;
+    } else {
+      this.buffer = await data.arrayBuffer();
+    }
   }
 
   get metadata(): any {

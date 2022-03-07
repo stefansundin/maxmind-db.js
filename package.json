@@ -1,6 +1,6 @@
 {
   "name": "maxmind-db",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A MaxMind database reader for web browsers.",
   "homepage": "https://github.com/stefansundin/maxmind-db.js",
   "repository": {
