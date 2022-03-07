@@ -4,7 +4,7 @@ export default class MaxMindDB {
     private data_section_start;
     private ipv4_start;
     private _metadata;
-    loadBlob(blob: Blob): Promise<void>;
+    load(data: ArrayBuffer | Blob | File | Response): Promise<void>;
     get metadata(): any;
     get(ip: string): Array<any>;
     record(addr: ArrayBuffer): Array<any>;

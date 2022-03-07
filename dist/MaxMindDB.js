@@ -1,15 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 class MaxMindDB {
-    constructor() {
-        this.buffer = null;
-        this.search_tree_size = null;
-        this.data_section_start = null;
-        this.ipv4_start = null;
-        this._metadata = null;
-    }
-    async loadBlob(blob) {
-        this.buffer = await blob.arrayBuffer();
+    async load(data) {
+        if (data instanceof ArrayBuffer) {
+            this.buffer = data;
+        }
+        else {
+            this.buffer = await data.arrayBuffer();
+        }
+        this.search_tree_size = undefined;
+        this.data_section_start = undefined;
+        this.ipv4_start = undefined;
+        this._metadata = undefined;
     }
     get metadata() {
         if (this._metadata !== null) {
