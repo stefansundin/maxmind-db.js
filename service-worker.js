@@ -7,7 +7,7 @@ self.addEventListener('install', e => {
       .open('maxmind-db.js')
       .then(c =>
         c.addAll([
-          'https://cdn.jsdelivr.net/gh/stefansundin/maxmind-db.js@v0.0.2/dist/MaxMindDB.min.js',
+          'https://cdn.jsdelivr.net/gh/stefansundin/maxmind-db.js@v0.0.4/dist/MaxMindDB.min.js',
           'https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css',
           'https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js',
           'https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.slim.min.js',

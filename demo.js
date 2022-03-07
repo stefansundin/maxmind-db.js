@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', async event => {
       }
 
       const new_db = new MaxMindDB();
-      await new_db.loadBlob(file);
+      await new_db.load(file);
 
       metadataField.value = JSON.stringify(new_db.metadata, null, 2);
 
