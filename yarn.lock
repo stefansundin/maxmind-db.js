@@ -5639,6 +5639,11 @@ makeerror@1.0.12:
   dependencies:
     tmpl "1.0.5"
 
+maxmind-db@^0.0.4:
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/maxmind-db/-/maxmind-db-0.0.4.tgz#a32c4e835a2351f91b157f17acb4f9d94b6e6825"
+  integrity sha512-b8PiLSL/kISul+Z272NNjHjFuVfGSCblB8qCLpsVhBX/uW8bR6A2G60tVa0lSc9iSIIG5nTqo1wLu1xxxAYlRQ==
+
 mdn-data@2.0.14:
   version "2.0.14"
   resolved "https://registry.yarnpkg.com/mdn-data/-/mdn-data-2.0.14.tgz#7113fc4281917d63ce29b43446f701e68c25ba50"
