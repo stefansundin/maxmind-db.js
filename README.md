@@ -19,4 +19,5 @@ Status: this is a brand new package so there are probably bugs. Please open a Gi
 You can get this package from npm, or load the code directly in a `<script>` tag (see demo page).
 
 - Demo: https://stefansundin.github.io/maxmind-db.js/
+- React demo: https://github.com/stefansundin/maxmind-db.js/tree/react-demo
 - Database specification: https://maxmind.github.io/MaxMind-DB/
