@@ -20,7 +20,7 @@ export default class MaxMindDB {
   }
 
   get metadata(): any {
-    if (this._metadata !== null) {
+    if (this._metadata) {
       return this._metadata;
     }
     if (!this.buffer) {
