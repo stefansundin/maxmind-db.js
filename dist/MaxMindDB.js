@@ -14,7 +14,7 @@ class MaxMindDB {
         this._metadata = undefined;
     }
     get metadata() {
-        if (this._metadata !== null) {
+        if (this._metadata) {
             return this._metadata;
         }
         if (!this.buffer) {
