@@ -1,11 +1,11 @@
 // https://maxmind.github.io/MaxMind-DB/
 
 export default class MaxMindDB {
-  private buffer: null | ArrayBuffer = null;
-  private search_tree_size: null | number = null;
-  private data_section_start: null | number = null;
-  private ipv4_start: null | number = null;
-  private _metadata: any = null;
+  private buffer: undefined | ArrayBuffer;
+  private search_tree_size: undefined | number;
+  private data_section_start: undefined | number;
+  private ipv4_start: undefined | number;
+  private _metadata: undefined | object;
 
   async load(data: ArrayBuffer | Blob | File | Response): Promise<void> {
     if (data instanceof ArrayBuffer) {
