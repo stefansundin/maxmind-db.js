@@ -13,6 +13,10 @@ export default class MaxMindDB {
     } else {
       this.buffer = await data.arrayBuffer();
     }
+    this.search_tree_size = undefined;
+    this.data_section_start = undefined;
+    this.ipv4_start = undefined;
+    this._metadata = undefined;
   }
 
   get metadata(): any {
