@@ -95,10 +95,8 @@ document.addEventListener('DOMContentLoaded', async event => {
   }
 
   async function load_database(file, source) {
-    if (source) {
-      urlField.value = '';
-      urlField.placeholder = source;
-    }
+    loadButton.disabled = true;
+    loadButton.value = 'Loading...';
 
     try {
       file = await normalizeExtensions(
@@ -114,7 +112,9 @@ document.addEventListener('DOMContentLoaded', async event => {
           if (!f) {
             return null;
           }
-          file = await f.blob;
+          const blob = await f.blob;
+          const filename = f.name.split('/').pop();
+          file = new File([blob], filename);
         } else if (ext === 'zip') {
           const zip = await JSZip.loadAsync(file);
           const f = Object.values(zip.files).find(
@@ -123,7 +123,9 @@ document.addEventListener('DOMContentLoaded', async event => {
           if (!f) {
             return null;
           }
-          file = await f.async('blob');
+          const blob = await f.async('blob');
+          const filename = f.name.split('/').pop();
+          file = new File([blob], filename);
         }
         return file;
       }, Promise.resolve(file));
@@ -147,13 +149,21 @@ document.addEventListener('DOMContentLoaded', async event => {
           db.metadata.database_type
         } database that was built on ${d.getFullYear()}-${`0${
           d.getMonth() + 1
-        }`.slice(-2)}-${`0${d.getDate()}`.slice(-2)}.`,
+        }`.slice(-2)}-${`0${d.getDate()}`.slice(-2)} (${formatFilesize(
+          file.size,
+        )}).`,
       );
 
       loadButton.classList.remove('btn-danger', 'btn-primary');
       loadButton.classList.add('btn-success');
       loadButton.value = 'Loaded';
+      loadButton.disabled = false;
       lookupButton.disabled = false;
+
+      if (source) {
+        urlField.value = '';
+        urlField.placeholder = source;
+      }
 
       if (db.metadata.languages) {
         while (language.childElementCount > 1) {
@@ -209,7 +219,9 @@ document.addEventListener('DOMContentLoaded', async event => {
   fileBtn.addEventListener('click', () => fileInput.click());
 
   clearCacheButton.addEventListener('click', async e => {
-    await caches.delete('maxmind-databases');
+    if (window.caches) {
+      await caches.delete('maxmind-databases');
+    }
   });
   abortButton.addEventListener('click', e => {
     e.preventDefault();
@@ -404,12 +416,15 @@ document.addEventListener('DOMContentLoaded', async event => {
       while (cacheList.hasChildNodes()) {
         cacheList.removeChild(cacheList.firstChild);
       }
-      const cache = await caches.open('maxmind-databases');
-      const keys = await cache.keys();
-      cacheExtra.classList.toggle('d-none', keys.length === 0);
-      if (keys.length > 0) {
-        clearCacheButton.disabled = false;
-        keys.forEach((key, i) => {
+
+      let i = 0;
+      let totalSize = 0;
+      if (window.caches && (await caches.has('maxmind-databases'))) {
+        const cache = await caches.open('maxmind-databases');
+        const cacheKeys = await cache.keys();
+        for (const key of cacheKeys) {
+          const size = (await (await cache.match(key)).clone().blob()).size;
+          totalSize += size;
           const url = new URL(key.url);
           const btn = document.createElement('button');
           btn.type = 'button';
@@ -417,32 +432,26 @@ document.addEventListener('DOMContentLoaded', async event => {
           btn.title = key.url;
           btn.appendChild(
             document.createTextNode(
-              `${i + 1}. ${url.pathname.split('/').pop()}`,
+              `${++i}. ${url.pathname.split('/').pop()} (${formatFilesize(
+                size,
+              )})`,
             ),
           );
           btn.addEventListener('click', () => loadCacheKey(key), false);
           cacheList.appendChild(btn);
-        });
-        const size = await Promise.all(
-          keys.map(key =>
-            cache.match(key).then(resp =>
-              resp
-                .clone()
-                .blob()
-                .then(b => b.size),
-            ),
-          ),
-        ).then(sizes => sizes.reduce((acc, size) => acc + size, 0));
-        cacheInfo.textContent = `${keys.length} ${
-          keys.length === 1 ? 'entry' : 'entries'
-        }, ${formatFilesize(size)}`;
-      } else {
+        }
+      }
+
+      cacheExtra.classList.toggle('d-none', i === 0);
+      clearCacheButton.disabled = i === 0;
+      if (i === 0) {
         cacheInfo.textContent = '';
-        clearCacheButton.disabled = true;
+      } else {
+        cacheInfo.textContent = `${i} ${
+          i === 1 ? 'entry' : 'entries'
+        }, ${formatFilesize(totalSize)}`;
       }
     });
-  } else {
-    cacheCheckbox.disabled = true;
   }
   if (localStorage.useCache !== undefined) {
     cacheCheckbox.checked = localStorage.useCache === 'true';
