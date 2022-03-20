@@ -94,7 +94,8 @@ document.addEventListener('DOMContentLoaded', async event => {
     return o;
   }
 
-  async function load_database(file, source) {
+  async function load_database(file, source, cache = false) {
+    const originalFile = file;
     loadButton.disabled = true;
     loadButton.value = 'Loading...';
 
@@ -142,6 +143,14 @@ document.addEventListener('DOMContentLoaded', async event => {
       // Swap the database
       // If the user starts loading a second database, then it is still possible to make queries to the first one while the new one is loading
       db = new_db;
+
+      if (cacheCheckbox.checked && cache && window.indexedDB) {
+        const db = await openIndexedDB();
+        const tx = db.transaction('databases', 'readwrite');
+        const store = tx.objectStore('databases');
+        store.put(originalFile);
+        tx.oncomplete = () => db.close();
+      }
 
       const d = new Date(1000 * db.metadata.build_epoch);
       log(
@@ -213,7 +222,7 @@ document.addEventListener('DOMContentLoaded', async event => {
 
   fileInput.addEventListener('change', async e => {
     for (const file of e.target.files) {
-      load_database(file, file.name);
+      load_database(file, file.name, true);
     }
   });
   fileBtn.addEventListener('click', () => fileInput.click());
@@ -221,6 +230,9 @@ document.addEventListener('DOMContentLoaded', async event => {
   clearCacheButton.addEventListener('click', async e => {
     if (window.caches) {
       await caches.delete('maxmind-databases');
+    }
+    if (window.indexedDB) {
+      await indexedDB.deleteDatabase('maxmind-databases');
     }
   });
   abortButton.addEventListener('click', e => {
@@ -329,7 +341,7 @@ document.addEventListener('DOMContentLoaded', async event => {
         continue;
       }
       const file = e.dataTransfer.items[i].getAsFile();
-      load_database(file, file.name);
+      load_database(file, file.name, true);
       break;
     }
   });
@@ -397,6 +409,37 @@ document.addEventListener('DOMContentLoaded', async event => {
     logField.value = '';
   });
 
+  function openIndexedDB() {
+    return new Promise((resolve, reject) => {
+      if (!window.indexedDB) {
+        reject();
+        return;
+      }
+      const openDBRequest = indexedDB.open('maxmind-databases', 1);
+      openDBRequest.onerror = reject;
+      openDBRequest.onupgradeneeded = e => {
+        const db = openDBRequest.result;
+        db.createObjectStore('databases', { keyPath: 'name' });
+      };
+      openDBRequest.onsuccess = e => {
+        const db = openDBRequest.result;
+        resolve(db);
+      };
+    });
+  }
+
+  async function loadIndexedDBKey(key) {
+    const db = await openIndexedDB();
+    const store = db
+      .transaction('databases', 'readonly')
+      .objectStore('databases');
+    const getRequest = store.get(key);
+    getRequest.onsuccess = () => {
+      const file = getRequest.result;
+      load_database(file, file.name);
+    };
+  }
+
   async function loadCacheKey(key) {
     const cache = await caches.open('maxmind-databases');
     const response = await cache.match(key);
@@ -411,7 +454,7 @@ document.addEventListener('DOMContentLoaded', async event => {
   }
 
   // Check if caches is supported
-  if (window.caches) {
+  if (window.caches || window.indexedDB) {
     $('#db-actions').on('show.bs.dropdown', async () => {
       while (cacheList.hasChildNodes()) {
         cacheList.removeChild(cacheList.firstChild);
@@ -438,6 +481,42 @@ document.addEventListener('DOMContentLoaded', async event => {
             ),
           );
           btn.addEventListener('click', () => loadCacheKey(key), false);
+          cacheList.appendChild(btn);
+        }
+      }
+
+      if (window.indexedDB) {
+        const idbData = await new Promise(async (resolve, reject) => {
+          const databases = await indexedDB.databases();
+          if (!databases.find(db => db.name === 'maxmind-databases')) {
+            resolve([]);
+            return;
+          }
+          const db = await openIndexedDB();
+          const store = db
+            .transaction('databases', 'readonly')
+            .objectStore('databases');
+          const data = [];
+          store.openCursor().onerror = reject;
+          store.openCursor().onsuccess = e => {
+            const cursor = e.target.result;
+            if (cursor) {
+              data.push([cursor.key, cursor.value.size]);
+              cursor.continue();
+            } else {
+              resolve(data);
+            }
+          };
+        });
+        for (const [key, size] of idbData) {
+          totalSize += size;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'dropdown-item';
+          btn.appendChild(
+            document.createTextNode(`${++i}. ${key} (${formatFilesize(size)})`),
+          );
+          btn.addEventListener('click', () => loadIndexedDBKey(key), false);
           cacheList.appendChild(btn);
         }
       }
