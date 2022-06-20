@@ -185,10 +185,10 @@ document.addEventListener('DOMContentLoaded', async event => {
           language.appendChild(option);
         }
         if (
-          localStorage.language &&
-          db.metadata.languages.includes(localStorage.language)
+          localStorage.MaxMindDemo_language &&
+          db.metadata.languages.includes(localStorage.MaxMindDemo_language)
         ) {
-          language.value = localStorage.language;
+          language.value = localStorage.MaxMindDemo_language;
         }
       }
     } catch (err) {
@@ -364,8 +364,8 @@ document.addEventListener('DOMContentLoaded', async event => {
           return;
         }
         let data = result[2];
-        if (localStorage.language) {
-          data = filterNames(data, localStorage.language);
+        if (localStorage.MaxMindDemo_language) {
+          data = filterNames(data, localStorage.MaxMindDemo_language);
         }
         log(`# ${addr}\n` + JSON.stringify(data, null, 2));
       }
@@ -534,18 +534,18 @@ document.addEventListener('DOMContentLoaded', async event => {
       }
     });
   }
-  if (localStorage.useCache !== undefined) {
-    cacheCheckbox.checked = localStorage.useCache === 'true';
+  if (localStorage.MaxMindDemo_useCache !== undefined) {
+    cacheCheckbox.checked = localStorage.MaxMindDemo_useCache === 'true';
   }
   cacheCheckbox.addEventListener('input', e => {
-    localStorage.useCache = e.currentTarget.checked;
+    localStorage.MaxMindDemo_useCache = e.currentTarget.checked;
   });
 
   language.addEventListener('input', () => {
     if (language.value === '') {
-      delete localStorage.language;
+      delete localStorage.MaxMindDemo_language;
     } else {
-      localStorage.language = language.value;
+      localStorage.MaxMindDemo_language = language.value;
     }
   });
 
