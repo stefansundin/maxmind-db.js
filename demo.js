@@ -489,10 +489,13 @@ document.addEventListener('DOMContentLoaded', async event => {
 
       if (window.indexedDB) {
         const idbData = await new Promise(async (resolve, reject) => {
-          const databases = await indexedDB.databases();
-          if (!databases.find(db => db.name === 'maxmind-databases')) {
-            resolve([]);
-            return;
+          if (indexedDB.databases) {
+            // Firefox - https://bugzilla.mozilla.org/show_bug.cgi?id=934640
+            const databases = await indexedDB.databases();
+            if (!databases.find(db => db.name === 'maxmind-databases')) {
+              resolve([]);
+              return;
+            }
           }
           const db = await openIndexedDB();
           const store = db
