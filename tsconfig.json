@@ -13,4 +13,7 @@
     "declaration": true,
     "declarationMap": true,
   },
+  "files": [
+    "./src/MaxMindDB.ts"
+  ]
 }

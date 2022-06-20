@@ -73,12 +73,12 @@ export default class MaxMindDB {
   }
 
   resolve_data_pointer(pointer: number): Array<any> {
-    if (!this.buffer) {
+    if (!this.buffer || !this.search_tree_size) {
       throw new Error('Database not loaded');
     }
 
     const offset_in_file =
-      pointer - this.metadata.node_count + this.search_tree_size!;
+      pointer - this.metadata.node_count + this.search_tree_size;
 
     if (offset_in_file >= this.buffer.byteLength) {
       throw new Error('The search tree is corrupt');
@@ -190,10 +190,13 @@ export default class MaxMindDB {
     }
 
     if (type === 1) {
+      if (!this.data_section_start) {
+        throw new Error('Metadata not initialized');
+      }
       // pointer
       const ptr_size = (ctrl_byte >>> 3) & 0x03;
       const ptr_value = ctrl_byte & 0x07;
-      let value = this.data_section_start!;
+      let value = this.data_section_start;
       if (ptr_size === 0) {
         // If the size is 0, the pointer is built by appending the next byte to the last three bits to produce an 11-bit value.
         const bytes = new Uint8Array(2);
