@@ -10,10 +10,6 @@ input[type="text"] {
   word-break: break-all;
 }
 
-#db .dropdown-menu {
-  min-width: 400px;
-}
-
 .form-inline .input-group {
   margin-top: 0;
   margin-right: 10px;
@@ -34,7 +30,6 @@ input[type="text"] {
   margin-top: 1.25rem;
   margin-bottom: 1.25rem;
   border: 1px solid #eee;
-  border-left-width: 1px;
   border-left-width: .25rem;
   border-radius: .25rem;
   border-left-color: #17a2b8;
