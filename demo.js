@@ -14,11 +14,13 @@ document.addEventListener('DOMContentLoaded', async event => {
 
   let db;
   let abortController;
+  let loadedDatabase;
   const dbForm = document.getElementById('db');
   const ipForm = document.getElementById('ip');
   const urlField = document.getElementById('url');
   const loadButton = document.getElementById('load');
   const cacheCheckbox = document.getElementById('cache');
+  const autoloadCheckbox = document.getElementById('autoload');
   const clearCacheButton = document.getElementById('clearCache');
   const cacheInfo = document.getElementById('cacheInfo');
   const cacheExtra = document.getElementById('cacheExtra');
@@ -150,12 +152,18 @@ document.addEventListener('DOMContentLoaded', async event => {
       // If the user starts loading a second database, then it is still possible to make queries to the first one while the new one is loading
       db = new_db;
 
-      if (cacheCheckbox.checked && cache && window.indexedDB) {
-        const db = await openIndexedDB();
-        const tx = db.transaction('databases', 'readwrite');
-        const store = tx.objectStore('databases');
-        store.put(originalFile);
-        tx.oncomplete = () => db.close();
+      if (cacheCheckbox.checked && window.indexedDB) {
+        if (cache) {
+          const db = await openIndexedDB();
+          const tx = db.transaction('databases', 'readwrite');
+          const store = tx.objectStore('databases');
+          store.put(originalFile);
+          tx.oncomplete = () => db.close();
+        }
+        loadedDatabase = originalFile.name;
+        if (autoloadCheckbox.checked) {
+          localStorage.MaxMindDemo_autoload = loadedDatabase;
+        }
       }
 
       const d = new Date(1000 * db.metadata.build_epoch);
@@ -388,30 +396,33 @@ document.addEventListener('DOMContentLoaded', async event => {
         reject();
         return;
       }
-      const openDBRequest = indexedDB.open('maxmind-databases', 1);
-      openDBRequest.onerror = reject;
-      openDBRequest.onupgradeneeded = e => {
-        const db = openDBRequest.result;
+      const request = indexedDB.open('maxmind-databases', 1);
+      request.onerror = reject;
+      request.onupgradeneeded = e => {
+        const db = request.result;
         db.createObjectStore('databases', { keyPath: 'name' });
       };
-      openDBRequest.onsuccess = e => {
-        const db = openDBRequest.result;
+      request.onsuccess = e => {
+        const db = request.result;
         resolve(db);
       };
     });
   }
 
   async function loadIndexedDBKey(key) {
-    urlField.value = '';
-    urlField.placeholder = key;
     const db = await openIndexedDB();
     const store = db
       .transaction('databases', 'readonly')
       .objectStore('databases');
-    const getRequest = store.get(key);
-    getRequest.onsuccess = () => {
+    const request = store.get(key);
+    request.onsuccess = () => {
       db.close();
-      const file = getRequest.result;
+      const file = request.result;
+      if (!file) {
+        throw new Error('File not found in database.');
+      }
+      urlField.value = '';
+      urlField.placeholder = key;
       load_database(file, false);
     };
   }
@@ -420,6 +431,9 @@ document.addEventListener('DOMContentLoaded', async event => {
   if (window.indexedDB) {
     clearCacheButton.addEventListener('click', async e => {
       await indexedDB.deleteDatabase('maxmind-databases');
+      delete localStorage.MaxMindDemo_autoload;
+      autoloadCheckbox.checked = false;
+      loadedDatabase = undefined;
     });
 
     $('#db-actions').on('show.bs.dropdown', async () => {
@@ -486,6 +500,22 @@ document.addEventListener('DOMContentLoaded', async event => {
   }
   cacheCheckbox.addEventListener('input', e => {
     localStorage.MaxMindDemo_useCache = e.currentTarget.checked;
+  });
+  if (localStorage.MaxMindDemo_autoload !== undefined) {
+    autoloadCheckbox.checked = true;
+    if (localStorage.MaxMindDemo_autoload === 'true') {
+      // indexedDB is probably not supported by the browser, just load the default database URL
+      loadButton.click();
+    } else {
+      loadIndexedDBKey(localStorage.MaxMindDemo_autoload);
+    }
+  }
+  autoloadCheckbox.addEventListener('input', e => {
+    if (autoloadCheckbox.checked) {
+      localStorage.MaxMindDemo_autoload = loadedDatabase || 'true';
+    } else {
+      delete localStorage.MaxMindDemo_autoload;
+    }
   });
 
   language.addEventListener('input', () => {
