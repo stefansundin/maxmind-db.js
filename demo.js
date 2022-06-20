@@ -6,6 +6,12 @@ BigInt.prototype.toJSON = function () {
 };
 
 document.addEventListener('DOMContentLoaded', async event => {
+  // Delete old cache store
+  // TODO: Delete this later
+  if (window.caches) {
+    caches.delete('maxmind-databases');
+  }
+
   let db;
   let abortController;
   const dbForm = document.getElementById('db');
@@ -94,7 +100,7 @@ document.addEventListener('DOMContentLoaded', async event => {
     return o;
   }
 
-  async function load_database(file, source, cache = false) {
+  async function load_database(file, cache = true) {
     const originalFile = file;
     loadButton.disabled = true;
     loadButton.value = 'Loading...';
@@ -169,11 +175,6 @@ document.addEventListener('DOMContentLoaded', async event => {
       loadButton.disabled = false;
       lookupButton.disabled = false;
 
-      if (source) {
-        urlField.value = '';
-        urlField.placeholder = source;
-      }
-
       if (db.metadata.languages) {
         while (language.childElementCount > 1) {
           language.removeChild(language.lastChild);
@@ -222,19 +223,11 @@ document.addEventListener('DOMContentLoaded', async event => {
 
   fileInput.addEventListener('change', async e => {
     for (const file of e.target.files) {
-      load_database(file, file.name, true);
+      load_database(file);
     }
   });
   fileBtn.addEventListener('click', () => fileInput.click());
 
-  clearCacheButton.addEventListener('click', async e => {
-    if (window.caches) {
-      await caches.delete('maxmind-databases');
-    }
-    if (window.indexedDB) {
-      await indexedDB.deleteDatabase('maxmind-databases');
-    }
-  });
   abortButton.addEventListener('click', e => {
     e.preventDefault();
     abortController.abort();
@@ -244,32 +237,13 @@ document.addEventListener('DOMContentLoaded', async event => {
     loadButton.blur();
     document.body.click(); // close any dropdowns that might be open
 
-    let cache, response;
-    if (cacheCheckbox.checked) {
-      cache = await caches.open('maxmind-databases');
-      response = await cache.match(urlField.value);
-    }
-
     loadButton.disabled = true;
     loadButton.value = 'Loading...';
 
     try {
-      if (response) {
-        const file = new File(
-          [await response.blob()],
-          extractFilename(response.url),
-        );
-        await load_database(file);
-
-        progressBar.value = 1;
-        progressBar.max = 1;
-        progressBar.title = 'Loaded from cache';
-        return;
-      }
-
       abortController = new AbortController();
       abortButton.classList.remove('d-none');
-      response = await fetch(urlField.value, {
+      const response = await fetch(urlField.value, {
         signal: abortController.signal,
         cache: cacheCheckbox.checked ? 'force-cache' : 'default',
       });
@@ -277,9 +251,6 @@ document.addEventListener('DOMContentLoaded', async event => {
         throw new Error(
           `Error fetching database: ${response.status} ${response.statusText}`,
         );
-      }
-      if (cache) {
-        cache.put(urlField.value, response.clone());
       }
 
       // Render the progress bar
@@ -341,7 +312,7 @@ document.addEventListener('DOMContentLoaded', async event => {
         continue;
       }
       const file = e.dataTransfer.items[i].getAsFile();
-      load_database(file, file.name, true);
+      load_database(file);
       break;
     }
   });
@@ -431,88 +402,65 @@ document.addEventListener('DOMContentLoaded', async event => {
   }
 
   async function loadIndexedDBKey(key) {
+    urlField.value = '';
+    urlField.placeholder = key;
     const db = await openIndexedDB();
     const store = db
       .transaction('databases', 'readonly')
       .objectStore('databases');
     const getRequest = store.get(key);
     getRequest.onsuccess = () => {
+      db.close();
       const file = getRequest.result;
-      load_database(file, file.name);
+      load_database(file, false);
     };
   }
 
-  async function loadCacheKey(key) {
-    const cache = await caches.open('maxmind-databases');
-    const response = await cache.match(key);
-    if (!response) {
-      return;
-    }
-    const file = new File(
-      [await response.blob()],
-      extractFilename(response.url),
-    );
-    load_database(file, key.url);
-  }
-
   // Check if caches is supported
-  if (window.caches || window.indexedDB) {
+  if (window.indexedDB) {
+    clearCacheButton.addEventListener('click', async e => {
+      await indexedDB.deleteDatabase('maxmind-databases');
+    });
+
     $('#db-actions').on('show.bs.dropdown', async () => {
       while (cacheList.hasChildNodes()) {
         cacheList.removeChild(cacheList.firstChild);
       }
+      cacheExtra.classList.add('d-none');
+      clearCacheButton.disabled = true;
+      cacheInfo.textContent = '';
 
-      let i = 0;
-      let totalSize = 0;
-      if (window.caches && (await caches.has('maxmind-databases'))) {
-        const cache = await caches.open('maxmind-databases');
-        const cacheKeys = await cache.keys();
-        for (const key of cacheKeys) {
-          const size = (await (await cache.match(key)).clone().blob()).size;
-          totalSize += size;
-          const url = new URL(key.url);
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'dropdown-item';
-          btn.title = key.url;
-          btn.appendChild(
-            document.createTextNode(
-              `${++i}. ${url.pathname.split('/').pop()} (${formatFilesize(
-                size,
-              )})`,
-            ),
-          );
-          btn.addEventListener('click', () => loadCacheKey(key), false);
-          cacheList.appendChild(btn);
-        }
-      }
-
-      if (window.indexedDB) {
-        const idbData = await new Promise(async (resolve, reject) => {
-          if (indexedDB.databases) {
-            // Firefox - https://bugzilla.mozilla.org/show_bug.cgi?id=934640
-            const databases = await indexedDB.databases();
-            if (!databases.find(db => db.name === 'maxmind-databases')) {
-              resolve([]);
-              return;
-            }
+      const idbData = await new Promise(async (resolve, reject) => {
+        if (indexedDB.databases) {
+          // Firefox - https://bugzilla.mozilla.org/show_bug.cgi?id=934640
+          const databases = await indexedDB.databases();
+          if (!databases.find(db => db.name === 'maxmind-databases')) {
+            resolve([]);
+            return;
           }
-          const db = await openIndexedDB();
-          const store = db
-            .transaction('databases', 'readonly')
-            .objectStore('databases');
-          const data = [];
-          store.openCursor().onerror = reject;
-          store.openCursor().onsuccess = e => {
-            const cursor = e.target.result;
-            if (cursor) {
-              data.push([cursor.key, cursor.value.size]);
-              cursor.continue();
-            } else {
-              resolve(data);
-            }
-          };
-        });
+        }
+        const db = await openIndexedDB();
+        const store = db
+          .transaction('databases', 'readonly')
+          .objectStore('databases');
+        const data = [];
+        const request = store.openCursor();
+        request.onerror = reject;
+        request.onsuccess = e => {
+          const cursor = e.target.result;
+          if (cursor) {
+            data.push([cursor.key, cursor.value.size]);
+            cursor.continue();
+          } else {
+            db.close();
+            resolve(data);
+          }
+        };
+      });
+
+      if (idbData.length > 0) {
+        let i = 0;
+        let totalSize = 0;
         for (const [key, size] of idbData) {
           totalSize += size;
           const btn = document.createElement('button');
@@ -524,13 +472,9 @@ document.addEventListener('DOMContentLoaded', async event => {
           btn.addEventListener('click', () => loadIndexedDBKey(key), false);
           cacheList.appendChild(btn);
         }
-      }
 
-      cacheExtra.classList.toggle('d-none', i === 0);
-      clearCacheButton.disabled = i === 0;
-      if (i === 0) {
-        cacheInfo.textContent = '';
-      } else {
+        cacheExtra.classList.remove('d-none');
+        clearCacheButton.disabled = false;
         cacheInfo.textContent = `${i} ${
           i === 1 ? 'entry' : 'entries'
         }, ${formatFilesize(totalSize)}`;
