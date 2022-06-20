@@ -353,20 +353,22 @@ document.addEventListener('DOMContentLoaded', async event => {
 
     try {
       addrField.classList.remove('is-invalid');
-      const addr = addrField.value;
-      const result = db.get(addr);
-      console.log(result);
-      if (!result) {
-        log(
-          `Could not find ${addr} in the database. Perhaps it is a private IP address?`,
-        );
-        return;
+      const addrs = addrField.value.split(',').map(v => v.trim());
+      for (const addr of addrs) {
+        const result = db.get(addr);
+        console.log(result);
+        if (!result) {
+          log(
+            `Could not find ${addr} in the database. Perhaps it is a private IP address?`,
+          );
+          return;
+        }
+        let data = result[2];
+        if (localStorage.language) {
+          data = filterNames(data, localStorage.language);
+        }
+        log(`# ${addr}\n` + JSON.stringify(data, null, 2));
       }
-      let data = result[2];
-      if (localStorage.language) {
-        data = filterNames(data, localStorage.language);
-      }
-      log(`# ${addr}\n` + JSON.stringify(data, null, 2));
     } catch (err) {
       console.error(err);
       log(`Error: ${err.message}.`);
