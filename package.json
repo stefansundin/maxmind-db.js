@@ -12,8 +12,9 @@
   "browser": "dist/MaxMindDB.js",
   "types": "dist/MaxMindDB.d.ts",
   "scripts": {
-    "build": "./build.sh",
-    "lint": "eslint src"
+    "lint": "eslint src && tsc --noemit",
+    "prebuild": "npm run lint",
+    "build": "./build.sh"
   },
   "keywords": [
     "maxmind",
