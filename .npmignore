@@ -8,3 +8,4 @@ node_modules
 dist/MaxMindDB.min.js*
 build.sh
 webpack.config.js
+.eslintignore
