@@ -59,7 +59,7 @@ export default class MaxMindDB {
 
   get(ip: string): Array<any> {
     const addr = this.packIP(ip);
-    const [r] = this.record(addr);
+    const [r] = this.record(addr) as Array<Array<any>>;
     return r;
   }
 
