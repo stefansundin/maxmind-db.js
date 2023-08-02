@@ -224,7 +224,7 @@ export default class MaxMindDB {
         const view2 = new DataView(bytes.buffer);
         value += view2.getUint32(0, false) + 526336;
       } else if (ptr_size === 3) {
-        // Finally, if the size is 3, the pointer’s value is contained in the next four bytes as a 32-bit value. In this case, the last three bits of the control byte are ignored.
+        // Finally, if the size is 3, the pointer's value is contained in the next four bytes as a 32-bit value. In this case, the last three bits of the control byte are ignored.
         value += view.getUint32(position);
       }
 
@@ -241,7 +241,7 @@ export default class MaxMindDB {
       size = 285 + view.getUint16(position);
       position += 2;
     } else if (size === 31) {
-      // If the value is 31, then the size is 65,821 + the next three bytes after the type specifying bytes as a single unsigned integer.
+      // If the value is 31, then the size is 65821 + the next three bytes after the type specifying bytes as a single unsigned integer.
       const bytes = new Uint8Array(4);
       bytes.set([
         0,
