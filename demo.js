@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', async (event) => {
   let abortController;
   let loadedDatabase;
   let opfsRoot;
+  let localStorageUsable = false;
   const dbForm = document.getElementById('db');
   const ipForm = document.getElementById('ip');
   const urlField = document.getElementById('url');
@@ -170,7 +171,7 @@ document.addEventListener('DOMContentLoaded', async (event) => {
           await writable.close();
         }
         loadedDatabase = originalFile.name;
-        if (autoloadCheckbox.checked) {
+        if (autoloadCheckbox.checked && localStorageUsable) {
           localStorage.MaxMindDemo_autoload = loadedDatabase;
         }
       }
@@ -203,6 +204,7 @@ document.addEventListener('DOMContentLoaded', async (event) => {
           language.appendChild(option);
         }
         if (
+          localStorageUsable &&
           localStorage.MaxMindDemo_language &&
           db.metadata.languages.includes(localStorage.MaxMindDemo_language)
         ) {
@@ -356,8 +358,8 @@ document.addEventListener('DOMContentLoaded', async (event) => {
           return;
         }
         let data = result[2];
-        if (localStorage.MaxMindDemo_language) {
-          data = filterNames(data, localStorage.MaxMindDemo_language);
+        if (language.value) {
+          data = filterNames(data, language.value);
         }
         log(`# ${addr}\n` + JSON.stringify(data, null, 2));
       }
@@ -423,6 +425,8 @@ document.addEventListener('DOMContentLoaded', async (event) => {
       'OPFS is unsupported or unavailable. Database cache is disabled.',
       err,
     );
+    autoloadCheckbox.disabled = true;
+    autoloadCheckbox.parentElement.classList.add('disabled');
   }
   if (opfsRoot) {
     clearCacheButton.addEventListener('click', async (e) => {
@@ -478,36 +482,46 @@ document.addEventListener('DOMContentLoaded', async (event) => {
       }
     });
   }
-  if (localStorage.MaxMindDemo_useCache !== undefined) {
-    cacheCheckbox.checked = localStorage.MaxMindDemo_useCache === 'true';
-  }
-  cacheCheckbox.addEventListener('input', (e) => {
-    localStorage.MaxMindDemo_useCache = e.currentTarget.checked;
-  });
-  if (localStorage.MaxMindDemo_autoload !== undefined) {
-    autoloadCheckbox.checked = true;
-    if (localStorage.MaxMindDemo_autoload === 'true') {
-      // cached filename to load is not available, just load the default database URL
-      loadButton.click();
-    } else {
-      loadCachedFile(localStorage.MaxMindDemo_autoload);
-    }
-  }
-  autoloadCheckbox.addEventListener('input', (e) => {
-    if (autoloadCheckbox.checked) {
-      localStorage.MaxMindDemo_autoload = loadedDatabase || 'true';
-    } else {
-      delete localStorage.MaxMindDemo_autoload;
-    }
-  });
 
-  language.addEventListener('input', () => {
-    if (language.value === '') {
-      delete localStorage.MaxMindDemo_language;
-    } else {
-      localStorage.MaxMindDemo_language = language.value;
+  try {
+    if ('localStorage' in window && localStorage) {
+      localStorageUsable = true;
     }
-  });
+  } catch (err) {
+    console.warn('localStorage is not usable.', err.message);
+  }
+  if (localStorageUsable) {
+    if (localStorage.MaxMindDemo_useCache !== undefined) {
+      cacheCheckbox.checked = localStorage.MaxMindDemo_useCache === 'true';
+    }
+    cacheCheckbox.addEventListener('input', (e) => {
+      localStorage.MaxMindDemo_useCache = e.currentTarget.checked;
+    });
+    if (localStorage.MaxMindDemo_autoload !== undefined) {
+      autoloadCheckbox.checked = true;
+      if (localStorage.MaxMindDemo_autoload === 'true') {
+        // cached filename to load is not available, just load the default database URL
+        loadButton.click();
+      } else {
+        loadCachedFile(localStorage.MaxMindDemo_autoload);
+      }
+    }
+    autoloadCheckbox.addEventListener('input', (e) => {
+      if (autoloadCheckbox.checked) {
+        localStorage.MaxMindDemo_autoload = loadedDatabase || 'true';
+      } else {
+        delete localStorage.MaxMindDemo_autoload;
+      }
+    });
+
+    language.addEventListener('input', () => {
+      if (language.value === '') {
+        delete localStorage.MaxMindDemo_language;
+      } else {
+        localStorage.MaxMindDemo_language = language.value;
+      }
+    });
+  }
 
   if (navigator.serviceWorker && document.location.protocol === 'https:') {
     const service_worker_alert = document.getElementById(
