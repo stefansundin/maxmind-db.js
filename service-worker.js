@@ -1,11 +1,11 @@
 // Increment this number to trigger offline clients to update their caches:
 // v3
 
-self.addEventListener('install', e => {
+self.addEventListener('install', (e) => {
   e.waitUntil(
     caches
       .open('maxmind-db.js')
-      .then(c =>
+      .then((c) =>
         c.addAll([
           'https://cdn.jsdelivr.net/gh/stefansundin/maxmind-db.js@v0.0.4/dist/MaxMindDB.min.js',
           'https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css',
@@ -22,7 +22,7 @@ self.addEventListener('install', e => {
   );
 });
 
-self.addEventListener('fetch', e => {
+self.addEventListener('fetch', (e) => {
   // console.log(e.request.url);
-  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+  e.respondWith(caches.match(e.request).then((r) => r || fetch(e.request)));
 });

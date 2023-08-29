@@ -5,7 +5,7 @@ BigInt.prototype.toJSON = function () {
   return this.toString();
 };
 
-document.addEventListener('DOMContentLoaded', async event => {
+document.addEventListener('DOMContentLoaded', async (event) => {
   // Delete old cache store
   // TODO: Delete this later
   if (window.caches) {
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', async event => {
   }
 
   function normalizeExtensions(arr) {
-    return arr.flatMap(ext => {
+    return arr.flatMap((ext) => {
       if (ext === 'tgz') {
         return ['tar', 'gz'];
       } else if (ext === 'gzip') {
@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', async event => {
 
   function filterNames(o, lang) {
     if (o instanceof Array) {
-      return o.map(v => filterNames(v, lang));
+      return o.map((v) => filterNames(v, lang));
     } else if (o instanceof Object) {
       if (o['names']) {
         o['name'] = o['names'][lang] || o['names']['en'];
@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', async event => {
           file = new File([data], file.name.split('.').slice(0, -1).join('.'));
         } else if (ext === 'tar') {
           const files = await untar(await file.arrayBuffer());
-          const f = files.find(f => f.name.endsWith('.mmdb'));
+          const f = files.find((f) => f.name.endsWith('.mmdb'));
           if (!f) {
             return null;
           }
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', async event => {
         } else if (ext === 'zip') {
           const zip = await JSZip.loadAsync(file);
           const f = Object.values(zip.files).find(
-            f => !f.name.startsWith('__MACOSX/') && f.name.endsWith('.mmdb'),
+            (f) => !f.name.startsWith('__MACOSX/') && f.name.endsWith('.mmdb'),
           );
           if (!f) {
             return null;
@@ -209,19 +209,19 @@ document.addEventListener('DOMContentLoaded', async event => {
     }
   }
 
-  urlField.addEventListener('input', e => {
+  urlField.addEventListener('input', (e) => {
     downloadButton.href = urlField.value;
   });
   downloadButton.href = urlField.value;
 
-  document.querySelectorAll('.dropdown-item.form-inline').forEach(el =>
-    el.addEventListener('click', e => {
+  document.querySelectorAll('.dropdown-item.form-inline').forEach((el) =>
+    el.addEventListener('click', (e) => {
       e.stopPropagation();
     }),
   );
 
-  document.querySelectorAll('#example_addrs .dropdown-item').forEach(el => {
-    el.addEventListener('click', e => {
+  document.querySelectorAll('#example_addrs .dropdown-item').forEach((el) => {
+    el.addEventListener('click', (e) => {
       addrField.value = e.target.textContent;
       if (!lookupButton.disabled) {
         lookupButton.click();
@@ -229,18 +229,18 @@ document.addEventListener('DOMContentLoaded', async event => {
     });
   });
 
-  fileInput.addEventListener('change', async e => {
+  fileInput.addEventListener('change', async (e) => {
     for (const file of e.target.files) {
       load_database(file);
     }
   });
   fileBtn.addEventListener('click', () => fileInput.click());
 
-  abortButton.addEventListener('click', e => {
+  abortButton.addEventListener('click', (e) => {
     e.preventDefault();
     abortController.abort();
   });
-  dbForm.addEventListener('submit', async e => {
+  dbForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     loadButton.blur();
     document.body.click(); // close any dropdowns that might be open
@@ -298,12 +298,12 @@ document.addEventListener('DOMContentLoaded', async event => {
     }
   });
 
-  window.addEventListener('dragover', e => {
+  window.addEventListener('dragover', (e) => {
     e.preventDefault();
     dropzone.classList.remove('d-none');
   });
 
-  window.addEventListener('dragleave', e => {
+  window.addEventListener('dragleave', (e) => {
     if (e.relatedTarget) {
       return;
     }
@@ -311,7 +311,7 @@ document.addEventListener('DOMContentLoaded', async event => {
     dropzone.classList.add('d-none');
   });
 
-  window.addEventListener('drop', e => {
+  window.addEventListener('drop', (e) => {
     e.preventDefault();
     dropzone.classList.add('d-none');
 
@@ -325,14 +325,14 @@ document.addEventListener('DOMContentLoaded', async event => {
     }
   });
 
-  ipForm.addEventListener('submit', e => {
+  ipForm.addEventListener('submit', (e) => {
     e.preventDefault();
     lookupButton.blur();
     document.body.click(); // close any dropdowns that might be open
 
     try {
       addrField.classList.remove('is-invalid');
-      const addrs = addrField.value.split(',').map(v => v.trim());
+      const addrs = addrField.value.split(',').map((v) => v.trim());
       for (const addr of addrs) {
         const result = db.get(addr);
         console.log(result);
@@ -356,7 +356,7 @@ document.addEventListener('DOMContentLoaded', async event => {
     }
   });
 
-  expandIPv6Button.addEventListener('click', e => {
+  expandIPv6Button.addEventListener('click', (e) => {
     let packed;
     try {
       addrField.classList.remove('is-invalid');
@@ -386,7 +386,7 @@ document.addEventListener('DOMContentLoaded', async event => {
     }
   });
 
-  clearLogButton.addEventListener('click', e => {
+  clearLogButton.addEventListener('click', (e) => {
     logField.value = '';
   });
 
@@ -398,11 +398,11 @@ document.addEventListener('DOMContentLoaded', async event => {
       }
       const request = indexedDB.open('maxmind-databases', 1);
       request.onerror = reject;
-      request.onupgradeneeded = e => {
+      request.onupgradeneeded = (e) => {
         const db = request.result;
         db.createObjectStore('databases', { keyPath: 'name' });
       };
-      request.onsuccess = e => {
+      request.onsuccess = (e) => {
         const db = request.result;
         resolve(db);
       };
@@ -429,7 +429,7 @@ document.addEventListener('DOMContentLoaded', async event => {
 
   // Check if caches is supported
   if (window.indexedDB) {
-    clearCacheButton.addEventListener('click', async e => {
+    clearCacheButton.addEventListener('click', async (e) => {
       await indexedDB.deleteDatabase('maxmind-databases');
       delete localStorage.MaxMindDemo_autoload;
       autoloadCheckbox.checked = false;
@@ -448,7 +448,7 @@ document.addEventListener('DOMContentLoaded', async event => {
         if (indexedDB.databases) {
           // Firefox - https://bugzilla.mozilla.org/show_bug.cgi?id=934640
           const databases = await indexedDB.databases();
-          if (!databases.find(db => db.name === 'maxmind-databases')) {
+          if (!databases.find((db) => db.name === 'maxmind-databases')) {
             resolve([]);
             return;
           }
@@ -460,7 +460,7 @@ document.addEventListener('DOMContentLoaded', async event => {
         const data = [];
         const request = store.openCursor();
         request.onerror = reject;
-        request.onsuccess = e => {
+        request.onsuccess = (e) => {
           const cursor = e.target.result;
           if (cursor) {
             data.push([cursor.key, cursor.value.size]);
@@ -498,7 +498,7 @@ document.addEventListener('DOMContentLoaded', async event => {
   if (localStorage.MaxMindDemo_useCache !== undefined) {
     cacheCheckbox.checked = localStorage.MaxMindDemo_useCache === 'true';
   }
-  cacheCheckbox.addEventListener('input', e => {
+  cacheCheckbox.addEventListener('input', (e) => {
     localStorage.MaxMindDemo_useCache = e.currentTarget.checked;
   });
   if (localStorage.MaxMindDemo_autoload !== undefined) {
@@ -510,7 +510,7 @@ document.addEventListener('DOMContentLoaded', async event => {
       loadIndexedDBKey(localStorage.MaxMindDemo_autoload);
     }
   }
-  autoloadCheckbox.addEventListener('input', e => {
+  autoloadCheckbox.addEventListener('input', (e) => {
     if (autoloadCheckbox.checked) {
       localStorage.MaxMindDemo_autoload = loadedDatabase || 'true';
     } else {
@@ -540,7 +540,7 @@ document.addEventListener('DOMContentLoaded', async event => {
     async function refresh_service_worker_info() {
       const all_registrations =
         await navigator.serviceWorker.getRegistrations();
-      const installed = all_registrations.some(r =>
+      const installed = all_registrations.some((r) =>
         window.location.href.startsWith(r.scope),
       );
       install_service_worker.textContent = `${
@@ -549,11 +549,11 @@ document.addEventListener('DOMContentLoaded', async event => {
     }
     refresh_service_worker_info();
 
-    install_service_worker.addEventListener('click', async e => {
+    install_service_worker.addEventListener('click', async (e) => {
       e.preventDefault();
       const all_registrations =
         await navigator.serviceWorker.getRegistrations();
-      const registrations = all_registrations.filter(r =>
+      const registrations = all_registrations.filter((r) =>
         window.location.href.startsWith(r.scope),
       );
       if (registrations.length > 0) {
@@ -574,7 +574,7 @@ document.addEventListener('DOMContentLoaded', async event => {
     btn_a2hs.disabled = true;
     deferredPrompt.prompt();
   });
-  window.addEventListener('beforeinstallprompt', e => {
+  window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
     btn_a2hs.disabled = false;
