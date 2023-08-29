@@ -11,10 +11,14 @@ document.addEventListener('DOMContentLoaded', async (event) => {
   if (window.caches) {
     caches.delete('maxmind-databases');
   }
+  if (window.indexedDB) {
+    await indexedDB.deleteDatabase('maxmind-databases');
+  }
 
   let db;
   let abortController;
   let loadedDatabase;
+  let opfsRoot;
   const dbForm = document.getElementById('db');
   const ipForm = document.getElementById('ip');
   const urlField = document.getElementById('url');
@@ -152,13 +156,18 @@ document.addEventListener('DOMContentLoaded', async (event) => {
       // If the user starts loading a second database, then it is still possible to make queries to the first one while the new one is loading
       db = new_db;
 
-      if (cacheCheckbox.checked && window.indexedDB) {
+      if (cacheCheckbox.checked && opfsRoot) {
         if (cache) {
-          const db = await openIndexedDB();
-          const tx = db.transaction('databases', 'readwrite');
-          const store = tx.objectStore('databases');
-          store.put(originalFile);
-          tx.oncomplete = () => db.close();
+          const cacheDir = await opfsRoot.getDirectoryHandle(
+            'maxmind-databases',
+            { create: true },
+          );
+          const fileHandle = await cacheDir.getFileHandle(originalFile.name, {
+            create: true,
+          });
+          const writable = await fileHandle.createWritable();
+          await writable.write(originalFile);
+          await writable.close();
         }
         loadedDatabase = originalFile.name;
         if (autoloadCheckbox.checked) {
@@ -231,6 +240,8 @@ document.addEventListener('DOMContentLoaded', async (event) => {
 
   fileInput.addEventListener('change', async (e) => {
     for (const file of e.target.files) {
+      urlField.value = '';
+      urlField.placeholder = file.name;
       load_database(file);
     }
   });
@@ -320,6 +331,8 @@ document.addEventListener('DOMContentLoaded', async (event) => {
         continue;
       }
       const file = e.dataTransfer.items[i].getAsFile();
+      urlField.value = '';
+      urlField.placeholder = file.name;
       load_database(file);
       break;
     }
@@ -390,47 +403,30 @@ document.addEventListener('DOMContentLoaded', async (event) => {
     logField.value = '';
   });
 
-  function openIndexedDB() {
-    return new Promise((resolve, reject) => {
-      if (!window.indexedDB) {
-        reject();
-        return;
-      }
-      const request = indexedDB.open('maxmind-databases', 1);
-      request.onerror = reject;
-      request.onupgradeneeded = (e) => {
-        const db = request.result;
-        db.createObjectStore('databases', { keyPath: 'name' });
-      };
-      request.onsuccess = (e) => {
-        const db = request.result;
-        resolve(db);
-      };
+  async function loadCachedFile(name) {
+    const cacheDir = await opfsRoot.getDirectoryHandle('maxmind-databases', {
+      create: false,
     });
+    const fileHandle = await cacheDir.getFileHandle(name, { create: false });
+    const file = await fileHandle.getFile();
+    urlField.value = '';
+    urlField.placeholder = `${name} (from cache)`;
+    load_database(file, false);
   }
 
-  async function loadIndexedDBKey(key) {
-    const db = await openIndexedDB();
-    const store = db
-      .transaction('databases', 'readonly')
-      .objectStore('databases');
-    const request = store.get(key);
-    request.onsuccess = () => {
-      db.close();
-      const file = request.result;
-      if (!file) {
-        throw new Error('File not found in database.');
-      }
-      urlField.value = '';
-      urlField.placeholder = key;
-      load_database(file, false);
-    };
+  // Check if OPFS is supported
+  try {
+    opfsRoot = await navigator.storage.getDirectory();
+  } catch (err) {
+    // Old browser or the page is running in an iframe
+    console.warn(
+      'OPFS is unsupported or unavailable. Database cache is disabled.',
+      err,
+    );
   }
-
-  // Check if caches is supported
-  if (window.indexedDB) {
+  if (opfsRoot) {
     clearCacheButton.addEventListener('click', async (e) => {
-      await indexedDB.deleteDatabase('maxmind-databases');
+      await opfsRoot.removeEntry('maxmind-databases', { recursive: true });
       delete localStorage.MaxMindDemo_autoload;
       autoloadCheckbox.checked = false;
       loadedDatabase = undefined;
@@ -444,53 +440,40 @@ document.addEventListener('DOMContentLoaded', async (event) => {
       clearCacheButton.disabled = true;
       cacheInfo.textContent = '';
 
-      const idbData = await new Promise(async (resolve, reject) => {
-        if (indexedDB.databases) {
-          // Firefox - https://bugzilla.mozilla.org/show_bug.cgi?id=934640
-          const databases = await indexedDB.databases();
-          if (!databases.find((db) => db.name === 'maxmind-databases')) {
-            resolve([]);
-            return;
-          }
+      let cacheDir;
+      try {
+        cacheDir = await opfsRoot.getDirectoryHandle('maxmind-databases', {
+          create: false,
+        });
+      } catch (err) {
+        if (!(err instanceof DOMException && err.name === 'NotFoundError')) {
+          console.error(err);
         }
-        const db = await openIndexedDB();
-        const store = db
-          .transaction('databases', 'readonly')
-          .objectStore('databases');
-        const data = [];
-        const request = store.openCursor();
-        request.onerror = reject;
-        request.onsuccess = (e) => {
-          const cursor = e.target.result;
-          if (cursor) {
-            data.push([cursor.key, cursor.value.size]);
-            cursor.continue();
-          } else {
-            db.close();
-            resolve(data);
-          }
-        };
-      });
+        return;
+      }
 
-      if (idbData.length > 0) {
-        let i = 0;
-        let totalSize = 0;
-        for (const [key, size] of idbData) {
-          totalSize += size;
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'dropdown-item';
-          btn.appendChild(
-            document.createTextNode(`${++i}. ${key} (${formatFilesize(size)})`),
-          );
-          btn.addEventListener('click', () => loadIndexedDBKey(key), false);
-          cacheList.appendChild(btn);
-        }
+      let i = 0;
+      let totalSize = 0;
+      for await (const [name, handle] of cacheDir) {
+        const file = await handle.getFile();
+        totalSize += file.size;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'dropdown-item';
+        btn.appendChild(
+          document.createTextNode(
+            `${++i}. ${name} (${formatFilesize(file.size)})`,
+          ),
+        );
+        btn.addEventListener('click', () => loadCachedFile(name), false);
+        cacheList.appendChild(btn);
+      }
 
+      if (i > 0) {
         cacheExtra.classList.remove('d-none');
         clearCacheButton.disabled = false;
         cacheInfo.textContent = `${i} ${
-          i === 1 ? 'entry' : 'entries'
+          i === 1 ? 'file' : 'files'
         }, ${formatFilesize(totalSize)}`;
       }
     });
@@ -504,10 +487,10 @@ document.addEventListener('DOMContentLoaded', async (event) => {
   if (localStorage.MaxMindDemo_autoload !== undefined) {
     autoloadCheckbox.checked = true;
     if (localStorage.MaxMindDemo_autoload === 'true') {
-      // indexedDB is probably not supported by the browser, just load the default database URL
+      // cached filename to load is not available, just load the default database URL
       loadButton.click();
     } else {
-      loadIndexedDBKey(localStorage.MaxMindDemo_autoload);
+      loadCachedFile(localStorage.MaxMindDemo_autoload);
     }
   }
   autoloadCheckbox.addEventListener('input', (e) => {
