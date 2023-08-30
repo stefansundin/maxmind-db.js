@@ -8,12 +8,12 @@ self.addEventListener('install', (e) => {
       .then((c) =>
         c.addAll([
           'https://cdn.jsdelivr.net/gh/stefansundin/maxmind-db.js@v0.0.4/dist/MaxMindDB.min.js',
-          'https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css',
-          'https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js',
-          'https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.slim.min.js',
-          'https://cdn.jsdelivr.net/gh/nodeca/pako@v2.0.4/dist/pako.min.js',
+          'https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css',
+          'https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js',
+          'https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.slim.min.js',
+          'https://cdn.jsdelivr.net/gh/nodeca/pako@v2.1.0/dist/pako.min.js',
           'https://cdn.jsdelivr.net/gh/InvokIT/js-untar@v2.0.0/build/dist/untar.js',
-          'https://cdn.jsdelivr.net/gh/Stuk/jszip@v3.7.1/dist/jszip.min.js',
+          'https://cdn.jsdelivr.net/gh/Stuk/jszip@v3.10.1/dist/jszip.min.js',
           'demo.css',
           'demo.js',
           'icon.png',
