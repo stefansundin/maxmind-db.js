@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', async (event) => {
     caches.delete('maxmind-databases');
   }
   if (window.indexedDB) {
-    await indexedDB.deleteDatabase('maxmind-databases');
+    indexedDB.deleteDatabase('maxmind-databases');
   }
 
   let db;
